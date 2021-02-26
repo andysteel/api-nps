@@ -6,7 +6,7 @@ import UserRepository from "../repositories/UserRepository";
 class UserController {
 
     async create(request: Request, response: Response) {
-        const {name, email} = request.body;
+        const { name, email } = request.body;
         const userRepository = getCustomRepository(UserRepository)
 
         const userAlreadyExists = await userRepository.findOne({
