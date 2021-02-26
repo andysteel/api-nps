@@ -8,8 +8,6 @@ class MailService {
     private client: Transporter
 
     constructor() {
-        console.log('Host SMTP '+process.env.HOST_SMTP + "-" + process.env.PORT_SMTP+"-"+process.env.PASSWORD_SMTP);
-        
         const transporter =  nodemailer.createTransport({
             host: process.env.HOST_SMTP || '',
             port: parseInt(this.portSmtp),
