@@ -5,6 +5,7 @@ import SurveyUserRepository from "../repositories/SurveyUserRepository";
 import UserRepository from "../repositories/UserRepository";
 import MailService from "../services/MailService";
 import { resolve } from 'path'
+import { AppError } from "../errors/AppError";
 
 class SendMailController {
 
@@ -18,35 +19,32 @@ class SendMailController {
         const user = await userRepository.findOne({ email })
 
         if(!user) {
-            return response.status(400).json({
-                error: 'User does not exists'
-            })
+            throw new AppError('User does not exists')
         }
 
         const survey = await surveyRepository.findOne({ id: survey_id })
 
         if(!survey) {
-            return response.status(400).json({
-                error: 'Survey does not exists'
-            })
+            throw new AppError('Survey does not exists')
         }
 
         const templatePath = resolve(__dirname, '../views/emails/npsMail.hbs')
+
+        const surveyUserAlreadyExists = await surveyUserRepository.findOne({
+            where: {user_id: user.id, value: null},
+            relations: ['user', 'survey']
+        })
 
         const variables = {
             name: user.name,
             title: survey.title,
             description: survey.description,
-            user_id: user.id,
+            id: '',
             link: process.env.URL_MAIL
         }
 
-        const surveyUserAlreadyExists = await surveyUserRepository.findOne({
-            where: [{user_id: user.id}, {value: null}],
-            relations: ['user', 'survey']
-        })
-
         if(surveyUserAlreadyExists) {
+            variables.id = surveyUserAlreadyExists.id
             await MailService.send(email, survey.title, variables, templatePath)            
             return response.json(surveyUserAlreadyExists)
         }
@@ -57,6 +55,10 @@ class SendMailController {
         })
 
         await surveyUserRepository.save(surveyUser)
+
+        variables.id = surveyUser.id
+
+        await MailService.send(email, survey.title, variables, templatePath)
 
         return response.status(201).json(surveyUser)
     }
